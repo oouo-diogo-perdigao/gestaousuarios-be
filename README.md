@@ -1,6 +1,8 @@
 # Gestão Usuários Backend
 
 # Instruções ao Professor
+Projeto usando jest e supertest com banco de dados sqlite.
+
 Preparando o Projeto
 
 		npm i
