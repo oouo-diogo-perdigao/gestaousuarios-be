@@ -1,123 +1,131 @@
-const request = require("supertest");
-const app = require("../../app");
-const User = require("../../models/User");
+import supertest from 'supertest';
+import app from '../../app';
 
-describe("User Endpoints", () => {
+describe('UserController', () => {
+	// testa rota de criação de usuário
+	describe('POST /users', () => {
+		it('Tenta criar usuário de teste', async () => {
+			const res = await supertest(app).post('/users').send({
+				name: 'John Doe',
+				email: 'johndoe@example.com',
+				password: '123456',
+			});
+			expect(res.status).toBe(201);
+			expect(res.body).toHaveProperty('id');
+		});
+		it('deve retornar um erro 404 se faltar dados', async () => {
+			const res = await supertest(app).post('/users').send({});
+			expect(res.status).toBe(404);
+			expect(res.body).toHaveProperty('erro');
+		});
+	});
+});
+
+let userId;
+
+describe('UserController', () => {
+	// cria um usuario virtual para cada testes
+	beforeEach(async () => {
+		const res = await supertest(app).post('/users').send({
+			name: 'John Doe',
+			email: 'johndoe@example.com',
+			password: '123456',
+		});
+		userId = res.body.id;
+	});
+
+	// apaga o usuario virtual após cada teste
 	afterEach(async () => {
-		await User.destroy({ where: {} });
+		const res = await supertest(app).delete('/users/' + userId);
 	});
 
-	describe("GET /users", () => {
-		test("should return a list of users", async () => {
-			await User.bulkCreate([
-				{
-					name: "John Doe",
-					email: "john@example.com",
-					password: "123456",
-					api_contract: "basic",
-				},
-				{
-					name: "Jane Doe",
-					email: "jane@example.com",
-					password: "123456",
-					api_contract: "pro",
-				},
-			]);
-
-			const res = await request(app).get("/users");
-			expect(res.statusCode).toEqual(200);
-			expect(res.body).toHaveLength(2);
+	//testa rota de listagem de usuários
+	describe('GET /users', () => {
+		it('Verifica se usuário de teste esta entre os criados', async () => {
+			const res = await supertest(app).get('/users');
+			expect(res.status).toBe(200);
+			expect(res.body).toBeInstanceOf(Array);
+			expect(res.body.some((user) => user.email == 'johndoe@example.com')).toBe(true);
+		});
+		it('deve retornar um erro 404 se o usuário não existir', async () => {
+			const res = await supertest(app).get('/users/0');
+			expect(res.status).toBe(404);
 		});
 	});
 
-	describe("POST /users", () => {
-		test("should create a new user", async () => {
-			const newUser = {
-				name: "John Doe",
-				email: "john@example.com",
-				password: "123456",
-				api_contract: "basic",
-			};
-
-			const res = await request(app).post("/users").send(newUser);
-			expect(res.statusCode).toEqual(201);
-			expect(res.body).toHaveProperty("id");
-			expect(res.body.name).toEqual(newUser.name);
-			expect(res.body.email).toEqual(newUser.email);
-			expect(res.body.password).toEqual(newUser.password);
-			expect(res.body.api_contract).toEqual(newUser.api_contract);
+	//testa rota de listagem de usuário individual
+	describe('GET /users/:id', () => {
+		it('Verifica se usuário de teste esta criado', async () => {
+			const res = await supertest(app).get('/users/' + userId);
+			expect(res.status).toBe(200);
+			//verifica se o array é exatamente o criado
+			expect(res.body).toEqual(
+				expect.objectContaining({
+					_id: userId,
+					name: 'John Doe',
+					email: 'johndoe@example.com',
+				})
+			);
 		});
 	});
 
-	describe("GET /users/:id", () => {
-		test("should return user details", async () => {
-			const user = await User.create({
-				name: "John Doe",
-				email: "john@example.com",
-				password: "123456",
-				api_contract: "basic",
-			});
-
-			const res = await request(app).get(`/users/${user.id}`);
-			expect(res.statusCode).toEqual(200);
-			expect(res.body.name).toEqual(user.name);
-			expect(res.body.email).toEqual(user.email);
+	// testa atualizar usuário de teste
+	describe('PUT /users/:id', () => {
+		it('deve atualizar um usuário existente', async () => {
+			const res = await supertest(app)
+				.put('/users/' + userId)
+				.send({
+					name: 'John Doe2',
+					email: 'johndoe2@example.com',
+					password: 'xxxxxx',
+				});
+			expect(res.status).toBe(200);
+			expect(res.body).toHaveProperty('id');
 		});
 
-		test("should return 404 when user is not found", async () => {
-			const res = await request(app).get("/users/999");
-			expect(res.statusCode).toEqual(404);
-		});
-	});
-
-	describe("PUT /users/:id", () => {
-		test("should update a user", async () => {
-			const user = await User.create({
-				name: "John Doe",
-				email: "john@example.com",
-				password: "123456",
-				api_contract: "basic",
-			});
-
-			const updatedUser = {
-				name: "John Updated",
-				email: "john_updated@example.com",
-				password: "654321",
-				api_contract: "pro",
-			};
-
-			const res = await request(app).put(`/users/${user.id}`).send(updatedUser);
-			expect(res.statusCode).toEqual(200);
-			expect(res.body.name).toEqual(updatedUser.name);
-			expect(res.body.email).toEqual(updatedUser.email);
-			expect(res.body.password).toEqual(updatedUser.password);
-			expect(res.body.api_contract).toEqual(updatedUser.api_contract);
+		it('deve retornar um erro 404 se o usuário não existir', async () => {
+			const res = await supertest(app)
+				.put('/users/' + 0)
+				.send({
+					name: 'John Doe2',
+					email: 'johndoe2@example.com',
+					password: 'xxxxxx',
+				});
+			expect(res.status).toBe(404);
 		});
 
-		test("should return 404 when user is not found", async () => {
-			const res = await request(app)
-				.put("/users/999")
-				.send({ name: "Not Found" });
-			expect(res.statusCode).toEqual(404);
+		it('deve retornar um erro 404 se faltar dados', async () => {
+			const res = await supertest(app)
+				.put('/users/' + 1)
+				.send({
+					name: 'John Doe2',
+					password: 'xxxxxx',
+				});
+			expect(res.status).toBe(404);
 		});
 	});
 
-	describe("DELETE /users/:id", () => {
-		test("should delete a user", async () => {
-			const user = await User.create({
-				name: "John Doe",
-				email: "john@example.com",
-				password: "123456",
-				api_contract: "basic",
-			});
-
-			const res = await request(app).delete(`/users/${user.id}`);
-			expect(res.statusCode).toEqual(204);
+	// testa deletar usuário de teste
+	describe('DELETE /users/:id', () => {
+		it('deve deletar um usuário existente', async () => {
+			const res = await supertest(app)
+				.delete('/users/' + userId)
+				.send();
+			expect(res.status).toBe(204);
 		});
 
-		test("should return 404 when user is not found", async () => {
-			const res = await request(app).delete("/users/999");
-			expect(res.statusCode).toEqual(404);
+		it('deve retornar um erro 404 se o usuário não existir', async () => {
+			const res = await supertest(app)
+				.delete('/users/' + 0)
+				.send();
+			expect(res.status).toBe(404);
+		});
+
+		it('deve retornar um erro 404 se não houver id', async () => {
+			const res = await supertest(app)
+				.delete('/users/' + 0)
+				.send();
+			expect(res.status).toBe(404);
 		});
 	});
 });

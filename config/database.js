@@ -1,11 +1,10 @@
-module.exports = {
-	dialect: "postgres",
-	host: "travelrpgwiki-instance-1.cnlkmymsw3cx.us-east-1.rds.amazonaws.com",
-	username: "postgres",
-	password: "sfR8CDDKsEbd52THmdaS",
-	database: "travelrpgwiki",
-	define: {
-		timestamps: true,
-		underscored: true,
-	},
-};
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+
+// you would have to import / invoke this in another file
+export async function openDb() {
+	return open({
+		filename: './database.db', // aparece na pasta raiz do projeto
+		driver: sqlite3.Database,
+	});
+}

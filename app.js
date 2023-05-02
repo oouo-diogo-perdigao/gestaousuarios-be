@@ -4,16 +4,19 @@ import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'fs';
 import yamljs from 'yamljs';
+import { openDb } from './config/database';
 
 const app = express();
 const server = http.createServer(app); //Enviar requisições http
+
+openDb(); // abre banco de dados usando a extenção recomendada você pode visualiza-lo
 
 app.use(morgan('dev')); //tratamentos de http
 app.use(express.json()); //reconhece solicitação de entrada como json
 app.use(express.urlencoded({ extended: false })); //reconhece o objeto de solicitação recebido como cadeias ou matrizes
 
 import routers from './routes';
-routers(app, server, process.env.VERSION);
+routers(app, server);
 
 //swagger
 const file = fs.readFileSync('./docs/swagger.yaml', 'utf8');

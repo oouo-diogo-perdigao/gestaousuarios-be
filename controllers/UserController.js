@@ -1,60 +1,121 @@
-const { userId } = req.params; // pega o id do user passado
-
-import { postgre } from '../../class/postgre';
-
-postgre
-	.query({
-		text: 'SELECT nick, avatar FROM public.user WHERE id=$1;',
-		values: [userId],
-	})
-	.then(async (sql) => {
-		if (sql.rowCount) res.status(200).json(sql.rows[0]);
-		else throw new Error('Usuário não encontrado');
-	})
-	.catch((e) => res.status(500).json({ error: e }));
-
-import User from '../models/User';
+import { openDb } from '../config/database';
 
 class UserController {
+	async createTable() {
+		// Cria tabela users com _id, name, email, password
+		return openDb().then(async (db) => {
+			await db.exec(`
+				CREATE TABLE IF NOT EXISTS users (
+					_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT NOT NULL,
+					email TEXT NOT NULL,
+					password TEXT NOT NULL
+				)
+			`);
+		});
+	}
+	async dropTable() {
+		// Deleta a tabela users
+		return openDb().then(async (db) => {
+			await db.exec(`DROP TABLE users`);
+		});
+	}
+
 	async listar(req, res) {
-		const users = await User.findAll();
-		return res.json(users);
+		if (req.params.id) {
+			//pega somente o especifico
+			openDb().then(async (db) => {
+				db.get(`SELECT _id, name, email FROM users WHERE _id = ?`, [req.params.id])
+					.then((result) => {
+						if (!result) {
+							res.status(404).json({ error: 'User not found' });
+						} else {
+							res.json(result);
+						}
+					})
+					.catch((err) => {
+						res.status(404).json({ error: err });
+					});
+			});
+		} else {
+			//pega todos na ausencia de um especifico
+			openDb().then(async (db) => {
+				db.all(`SELECT _id, name, email FROM users`)
+					.then((result) => {
+						res.json(result);
+					})
+					.catch((err) => {
+						res.status(500).json({ error: err });
+					});
+			});
+		}
 	}
 
 	async criar(req, res) {
-		const user = await User.findByPk(req.params.id);
-
-		if (!user) {
-			return res.status(404).json({ error: 'User not found' });
+		const { name, email, password } = req.body;
+		if (name && email && password) {
+			openDb().then(async (db) => {
+				db.run(
+					`INSERT INTO users (name, email, password)
+						VALUES (?,?,?)`,
+					[name, email, password]
+				)
+					.then((result) => {
+						//retorna codigo 201 de criado e o id do usuario criado
+						res.status(201).json({ id: result.lastID });
+					})
+					.catch((err) => {
+						res.status(500).json({ error: err });
+					});
+			});
+		} else {
+			res.status(404).json({ erro: 'Dados incompletos' });
 		}
-
-		return res.json(user);
 	}
 
 	async atualizar(req, res) {
-		const { name, email, password, api_contract } = req.body;
+		const { name, email, password } = req.body;
+		const _id = req.params.id;
 
-		const user = await User.create({ name, email, password, api_contract });
-
-		return res.status(201).json(user);
+		if (_id && name && email && password) {
+			openDb().then(async (db) => {
+				db.run(`UPDATE users SET name = ?, email = ?, password = ? WHERE _id = ?`, [name, email, password, _id])
+					.then((result) => {
+						if (result.changes === 0) {
+							res.status(404).json({ error: 'User not found' });
+						} else {
+							res.status(200).json({ id: _id });
+						}
+					})
+					.catch((err) => {
+						res.status(500).json({ error: err });
+					});
+			});
+		} else {
+			res.status(404).json({ erro: 'Dados incompletos' });
+		}
 	}
 
 	async deletar(req, res) {
-		const user = await User.findByPk(req.params.id);
+		const _id = req.params.id;
 
-		if (!user) {
-			return res.status(404).json({ error: 'User not found' });
+		if (_id) {
+			openDb().then(async (db) => {
+				db.run(`DELETE FROM users WHERE _id = ?`, [_id])
+					.then((result) => {
+						if (result.changes === 0) {
+							res.status(404).json({ error: 'User not found' });
+						} else {
+							res.status(204).json({ id: _id });
+						}
+					})
+					.catch((err) => {
+						res.status(500).json({ error: err });
+					});
+			});
+		} else {
+			res.status(404).json({ error: 'User not found' });
 		}
-
-		const { name, email, password, api_contract } = req.body;
-		const updatedUser = await user.update({
-			name,
-			email,
-			password,
-			api_contract,
-		});
-
-		return res.status(200).json(updatedUser);
 	}
 }
 
