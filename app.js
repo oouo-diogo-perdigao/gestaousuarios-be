@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'fs';
 import yamljs from 'yamljs';
+import cors from 'cors';
 import { openDb } from './config/database';
 
 const app = express();
@@ -14,6 +15,7 @@ openDb(); // abre banco de dados usando a extenção recomendada você pode visu
 app.use(morgan('dev')); //tratamentos de http
 app.use(express.json()); //reconhece solicitação de entrada como json
 app.use(express.urlencoded({ extended: false })); //reconhece o objeto de solicitação recebido como cadeias ou matrizes
+app.use(cors());
 
 import routers from './routes';
 routers(app, server);

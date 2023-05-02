@@ -1,4 +1,5 @@
 # Gestão Usuários Backend
+Diogo Passos Perdigão Britto
 
 # Instruções ao Professor
 Projeto usando jest e supertest com banco de dados sqlite.

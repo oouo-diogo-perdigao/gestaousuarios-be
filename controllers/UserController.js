@@ -30,7 +30,9 @@ class UserController {
 						if (!result) {
 							res.status(404).json({ error: 'User not found' });
 						} else {
-							res.json(result);
+							res.set('Access-Control-Expose-Headers', 'X-Total-Count');
+							res.set('X-Total-Count', result.length);
+							res.send(result);
 						}
 					})
 					.catch((err) => {
