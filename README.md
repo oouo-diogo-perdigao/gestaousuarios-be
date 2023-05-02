@@ -1,5 +1,20 @@
 # Gestão Usuários Backend
 
+# Instruções ao Professor
+Preparando o Projeto
+
+		npm i
+
+Executando os testes de sistema nos endpoints
+
+		npm test
+Para sair: "control+c"
+
+Executando o projeto
+
+		npm start
+
+
 ## Descrição
 Como parte do trabalho final da disciplina, deve-se criar uma API Backend para gestão de usuários do nosso sistema final.
 
