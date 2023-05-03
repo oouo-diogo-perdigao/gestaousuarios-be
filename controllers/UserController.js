@@ -30,9 +30,7 @@ class UserController {
 						if (!result) {
 							res.status(404).json({ error: 'User not found' });
 						} else {
-							res.set('Access-Control-Expose-Headers', 'X-Total-Count');
-							res.set('X-Total-Count', result.length);
-							res.send(result);
+							res.json(renamedData);
 						}
 					})
 					.catch((err) => {
@@ -44,7 +42,15 @@ class UserController {
 			openDb().then(async (db) => {
 				db.all(`SELECT _id, name, email FROM users`)
 					.then((result) => {
-						res.json(result);
+						res.set('Access-Control-Expose-Headers', 'X-Total-Count');
+						res.set('X-Total-Count', result.length);
+
+						const renamedData = result.map(({ _id, ...rest }) => ({
+							id: _id,
+							...rest,
+						}));
+
+						res.json(renamedData);
 					})
 					.catch((err) => {
 						res.status(500).json({ error: err });
